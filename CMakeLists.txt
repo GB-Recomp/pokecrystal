@@ -10,13 +10,24 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE Release)
+    set(CMAKE_BUILD_TYPE MinSizeRel)
 endif()
+# Default to a small-binary profile: MinSizeRel + section-based dead
+# stripping + post-link symbol stripping. Flip GBRECOMP_SHRINK off for
+# debugging; bump GBRECOMP_GENERATED_OPT_LEVEL to 3 for max perf.
+option(GBRECOMP_SHRINK "Aggressive size shrink (dead-strip + symbol strip)" ON)
 if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
     if(CMAKE_BUILD_TYPE STREQUAL "Debug")
         add_compile_options(-O0 -g)
-    else()
+    elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
         add_compile_options(-O3)
+    endif()
+    if(GBRECOMP_SHRINK)
+        add_compile_options(-ffunction-sections -fdata-sections)
+        add_link_options(-Wl,--gc-sections)
+        if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
+            add_link_options(-s)
+        endif()
     endif()
 endif()
 
@@ -115,7 +126,7 @@ set(POKECRYSTAL_SOURCES
     pokecrystal_funcs_61.c
 )
 
-set(GBRECOMP_GENERATED_OPT_LEVEL "3" CACHE STRING "Optimization level for generated ROM source files")
+set(GBRECOMP_GENERATED_OPT_LEVEL "1" CACHE STRING "Optimization level for generated ROM source files")
 set_property(CACHE GBRECOMP_GENERATED_OPT_LEVEL PROPERTY STRINGS 0 1 2 3)
 set_source_files_properties(${POKECRYSTAL_SOURCES} PROPERTIES COMPILE_OPTIONS "-O${GBRECOMP_GENERATED_OPT_LEVEL}")
 

@@ -280,8 +280,16 @@ static int run_graphical_launcher(const GBLauncherGame** out_selected) {
                 ImGui::IsKeyPressed(ImGuiKey_KeypadEnter) ||
                 ImGui::IsKeyPressed(ImGuiKey_GamepadFaceDown) ||
                 ImGui::IsKeyPressed(ImGuiKey_Z)) {
-                accepted = true;
-                running = false;
+                /* Silently no-op if the selected game's ROM is missing —
+                 * the "(missing ROM)" label tells the user what's needed.
+                 * Mouse clicks are already gated by ImGuiSelectableFlags_
+                 * Disabled below; this covers the keyboard/gamepad path. */
+                if (selected_index >= 0 &&
+                    (size_t)selected_index < g_game_count &&
+                    game_assets_available(g_games[selected_index].id)) {
+                    accepted = true;
+                    running = false;
+                }
             }
             if (ImGui::IsKeyPressed(ImGuiKey_Escape) ||
                 ImGui::IsKeyPressed(ImGuiKey_GamepadFaceRight)) {
